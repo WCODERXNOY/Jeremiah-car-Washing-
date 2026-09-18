@@ -1,5 +1,8 @@
 const ordersList = document.querySelector('#orders-list');
-let orders = JSON.parse(localStorage.getItem('jeremiah-orders') || '[]');
+const SUPABASE_URL = 'https://kcsdcvumecceiqgaesqb.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_tVsGha-B0q5CyWmmnPzyLQ_EhZNlxol';
+const ordersEndpoint = `${SUPABASE_URL}/rest/v1/orders`;
+let orders = [];
 
 function formatDate(value) {
     if (!value) return 'Date not set';
@@ -18,12 +21,33 @@ function renderOrders() {
         card.className = 'order-card';
         card.innerHTML = `<div class="order-icon">✦</div><div class="order-main"><div class="order-top"><div><p class="eyebrow">${order.status}</p><h2>${order.service}</h2></div><strong>$${order.price}</strong></div><p class="order-customer">${order.name} · ${order.car}</p><div class="order-details"><span><b>When</b>${formatDate(order.date)}<br>${order.time}</span><span><b>Payment</b>${order.payment}</span></div><button class="cancel-order" type="button">Cancel this wash</button></div>`;
         card.querySelector('.cancel-order').addEventListener('click', () => {
-            orders = orders.filter(item => item.id !== order.id);
-            localStorage.setItem('jeremiah-orders', JSON.stringify(orders));
-            renderOrders();
+            cancelOrder(order);
         });
         ordersList.append(card);
     });
 }
 
-renderOrders();
+async function loadOrders() {
+    try {
+        const response = await fetch(`${ordersEndpoint}?select=*&order=id.desc`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+        if (!response.ok) throw new Error('Supabase order load failed');
+        orders = await response.json();
+    } catch (error) {
+        orders = JSON.parse(localStorage.getItem('jeremiah-orders') || '[]');
+    }
+    renderOrders();
+}
+
+async function cancelOrder(order) {
+    try {
+        const response = await fetch(`${ordersEndpoint}?id=eq.${encodeURIComponent(order.id)}`, { method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+        if (!response.ok) throw new Error('Supabase order cancellation failed');
+        orders = orders.filter(item => item.id !== order.id);
+    } catch (error) {
+        orders = orders.filter(item => item.id !== order.id);
+        localStorage.setItem('jeremiah-orders', JSON.stringify(orders));
+    }
+    renderOrders();
+}
+
+loadOrders();

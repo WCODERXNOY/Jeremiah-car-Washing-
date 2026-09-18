@@ -6,8 +6,22 @@ const summaryService = document.querySelector('#summary-service');
 const summaryPrice = document.querySelector('#summary-price');
 const summaryDetails = document.querySelector('#summary-details');
 const dateInput = document.querySelector('#wash-date');
+const SUPABASE_URL = 'https://kcsdcvumecceiqgaesqb.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_tVsGha-B0q5CyWmmnPzyLQ_EhZNlxol';
+const ordersEndpoint = `${SUPABASE_URL}/rest/v1/orders`;
+const availabilityKey = 'tony-jeremiah-availability';
+const defaultAvailability = { 0: false, 1: true, 2: true, 3: true, 4: true, 5: true, 6: true };
+const availability = { ...defaultAvailability, ...JSON.parse(localStorage.getItem(availabilityKey) || '{}') };
 
 dateInput.min = new Date().toISOString().split('T')[0];
+
+function updateDateAvailability() {
+    if (!dateInput.value) return;
+    const day = new Date(`${dateInput.value}T12:00:00`).getDay();
+    const open = availability[day];
+    dateInput.setCustomValidity(open ? '' : 'We are not available on this day. Please choose an open day.');
+    document.querySelector('#booking-status').textContent = open ? 'Ready when you are' : 'That day is unavailable';
+}
 
 function showView(view) {
     sections.forEach(section => { section.hidden = section.dataset.section !== view; });
@@ -33,20 +47,43 @@ function updateSummary() {
 }
 
 [serviceSelect, dateInput, document.querySelector('#wash-time'), document.querySelector('#car-type')].forEach(input => input.addEventListener('input', updateSummary));
+dateInput.addEventListener('change', updateDateAvailability);
 bookingForm.addEventListener('submit', event => {
     event.preventDefault();
+    updateDateAvailability();
+    if (!bookingForm.reportValidity()) return;
     updateSummary();
     const [service, price] = serviceSelect.value.split('|');
     const booking = { id: Date.now(), name: document.querySelector('#customer-name').value.trim(), car: document.querySelector('#car-type').value, service, price, date: dateInput.value, time: document.querySelector('#wash-time').value, payment: document.querySelector('#payment-method').value, status: 'Booked' };
-    const orders = JSON.parse(localStorage.getItem('jeremiah-orders') || '[]');
-    orders.unshift(booking);
-    localStorage.setItem('jeremiah-orders', JSON.stringify(orders));
-    window.location.href = 'orders.html';
+    saveOrder(booking);
 });
+
+async function saveOrder(booking) {
+    const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+    try {
+        const response = await fetch(ordersEndpoint, { method: 'POST', headers, body: JSON.stringify(booking) });
+        if (!response.ok) throw new Error('Supabase order save failed');
+    } catch (error) {
+        const orders = JSON.parse(localStorage.getItem('jeremiah-orders') || '[]');
+        orders.unshift(booking);
+        localStorage.setItem('jeremiah-orders', JSON.stringify(orders));
+    }
+    window.location.href = 'orders.html';
+}
 
 document.querySelector('#theme-toggle').addEventListener('click', () => {
     document.body.classList.toggle('light-mode');
     localStorage.setItem('jeremiah-theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
 });
 if (localStorage.getItem('jeremiah-theme') === 'light') document.body.classList.add('light-mode');
+document.querySelectorAll('[data-day]').forEach(input => {
+    input.checked = availability[input.dataset.day];
+    input.addEventListener('change', () => {
+        availability[input.dataset.day] = input.checked;
+        localStorage.setItem(availabilityKey, JSON.stringify(availability));
+        input.parentElement.classList.toggle('closed', !input.checked);
+        input.parentElement.querySelector('b').textContent = input.checked ? 'Open' : 'Closed';
+    });
+    input.dispatchEvent(new Event('change'));
+});
 updateSummary();
