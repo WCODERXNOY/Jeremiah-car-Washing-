@@ -19,7 +19,7 @@ function renderOrders() {
     orders.forEach(order => {
         const card = document.createElement('article');
         card.className = 'order-card';
-        card.innerHTML = `<div class="order-icon">✦</div><div class="order-main"><div class="order-top"><div><p class="eyebrow">${order.status}</p><h2>${order.service}</h2></div><strong>$${order.price}</strong></div><p class="order-customer">${order.name} · ${order.car}</p><div class="order-details"><span><b>When</b>${formatDate(order.date)}<br>${order.time}</span><span><b>Payment</b>${order.payment}</span></div><button class="cancel-order" type="button">Cancel this wash</button></div>`;
+        card.innerHTML = `<div class="order-icon">✦</div><div class="order-main"><div class="order-top"><div><p class="eyebrow">${order.status}</p><h2>${order.service}</h2></div><strong>$${order.price}</strong></div><p class="order-customer">${order.name} · ${order.car}</p><div class="order-details"><span><b>When</b>${formatDate(order.date)}<br>${order.time}</span><span><b>Address</b>${order.address || 'Not provided'}</span><span><b>Payment</b>${order.payment}</span></div><button class="cancel-order" type="button">Cancel this wash</button></div>`;
         card.querySelector('.cancel-order').addEventListener('click', () => {
             cancelOrder(order);
         });

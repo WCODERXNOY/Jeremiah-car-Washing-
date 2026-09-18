@@ -54,7 +54,7 @@ bookingForm.addEventListener('submit', event => {
     if (!bookingForm.reportValidity()) return;
     updateSummary();
     const [service, price] = serviceSelect.value.split('|');
-    const booking = { id: Date.now(), name: document.querySelector('#customer-name').value.trim(), car: document.querySelector('#car-type').value, service, price, date: dateInput.value, time: document.querySelector('#wash-time').value, payment: document.querySelector('#payment-method').value, status: 'Booked' };
+    const booking = { id: Date.now(), name: document.querySelector('#customer-name').value.trim(), address: document.querySelector('#wash-address').value.trim(), car: document.querySelector('#car-type').value, service, price, date: dateInput.value, time: document.querySelector('#wash-time').value, payment: document.querySelector('#payment-method').value, status: 'Booked' };
     saveOrder(booking);
 });
 
